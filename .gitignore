@@ -1,0 +1,38 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# Data — never commit photos, selfies, DB or galleries
+data/
+
+# Logs
+logs/
+
+# insightface model cache
+.insightface/
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Environment variables
+.env
+.env.*
+
+# Docker
+.dockerignore
+
+# Test folders
+test_photos/
+registration selfies/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
