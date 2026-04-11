@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Photographer Upload{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Upload Wedding Photos</h1>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('folder')">From Folder Path</button>
+        <button class="tab-btn" onclick="showTab('files')">Select Files Manually</button>
+    </div>
+
+    <!-- Folder path tab -->
+    <div id="tab-folder" class="tab-panel">
+        <p>Paste the full path to the folder containing your photos. All images inside will be loaded automatically.</p>
+        <form id="folderForm">
+            <label>Folder Path
+                <input type="text" name="folder_path" id="folderInput"
+                    placeholder="/Users/you/Downloads/wedding photos" required />
+                <small>Example: /Users/ankitmehra/Downloads/photo recog</small>
+            </label>
+            <button type="submit" class="btn" id="folderBtn">Load Photos from Folder</button>
+        </form>
+    </div>
+
+    <!-- Manual file upload tab -->
+    <div id="tab-files" class="tab-panel" style="display:none;">
+        <p>Select all photos from the event. Processing happens automatically in the background.</p>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <label>Select Photos
+                <input type="file" name="photos" id="photoInput" accept="image/*" multiple required />
+                <small>You can select multiple files at once.</small>
+            </label>
+            <button type="submit" class="btn" id="uploadBtn">Upload Photos</button>
+        </form>
+    </div>
+
+    <!-- Progress bar (shown after upload) -->
+    <div id="progress" style="display:none; margin-top:20px;">
+        <div class="progress-bar-wrap">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <p id="progressText" style="margin-top:8px; color:#555; font-size:0.9rem;">Processing...</p>
+    </div>
+
+    <div id="result" style="display:none; margin-top:16px;"></div>
+</div>
+
+<style>
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+.tab-btn {
+    padding: 8px 18px; border: 1px solid #d1d5db; background: #f3f4f6;
+    border-radius: 8px; cursor: pointer; font-size: 0.9rem;
+}
+.tab-btn.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+</style>
+
+<script>
+// ---------------------------------------------------------------------------
+// Tab switching
+// ---------------------------------------------------------------------------
+function showTab(name) {
+    document.getElementById('tab-folder').style.display = name === 'folder' ? '' : 'none';
+    document.getElementById('tab-files').style.display  = name === 'files'  ? '' : 'none';
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+        b.classList.toggle('active', (name === 'folder' && i === 0) || (name === 'files' && i === 1));
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Status polling
+// ---------------------------------------------------------------------------
+let _statusInterval = null;
+
+function startStatusPolling() {
+    if (_statusInterval) return;
+    document.getElementById('progress').style.display = 'block';
+    _statusInterval = setInterval(async function () {
+        try {
+            const res  = await fetch('/status');
+            const data = await res.json();
+            const pct  = data.percent;
+            document.getElementById('progressBar').style.width = pct + '%';
+            document.getElementById('progressText').textContent =
+                `Processing: ${data.processed} / ${data.total} photos (${pct}%) · ${data.matches_found} matches found`;
+            if (!data.is_processing && data.pending === 0 && data.total > 0) {
+                stopStatusPolling();
+                document.getElementById('progressBar').style.width = '100%';
+                document.getElementById('progressText').textContent =
+                    `Done! ${data.processed} photos processed · ${data.matches_found} matches found.`;
+            }
+        } catch (e) { /* network blip — keep polling */ }
+    }, 3000);
+}
+
+function stopStatusPolling() {
+    if (_statusInterval) { clearInterval(_statusInterval); _statusInterval = null; }
+}
+
+function showResult(data) {
+    const el = document.getElementById('result');
+    el.style.display = 'block';
+    if (data.error) {
+        stopStatusPolling();
+        document.getElementById('progress').style.display = 'none';
+        el.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+    } else {
+        el.innerHTML = `<div class="alert alert-success">
+            <strong>${data.queued} photo(s) queued.</strong> ${data.message}
+        </div>`;
+        startStatusPolling();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Folder form
+// ---------------------------------------------------------------------------
+document.getElementById('folderForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const btn  = document.getElementById('folderBtn');
+    const path = document.getElementById('folderInput').value.trim();
+    if (!path) return;
+
+    btn.disabled = true;
+    document.getElementById('result').style.display = 'none';
+    stopStatusPolling();
+
+    const body = new FormData();
+    body.append('folder_path', path);
+    try {
+        const res  = await fetch('/upload-folder', { method: 'POST', body });
+        const data = await res.json();
+        showResult(data);
+    } catch (err) {
+        showResult({ error: 'Request failed: ' + err.message });
+    }
+    btn.disabled = false;
+});
+</script>
+
+<script src="/static/js/upload.js"></script>
+{% endblock %}

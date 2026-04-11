@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Guest Registration{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Guest Registration</h1>
+    <p>Submit your selfie and we'll find all your photos from the event.</p>
+
+    {% if success %}
+    <div class="alert alert-success">
+        <strong>You're registered!</strong> Once the photographer uploads the photos,
+        you'll receive an email with your personal gallery link.
+        {% if gallery_token %}
+        <br/>Your gallery: <a href="/gallery/{{ gallery_token }}">/gallery/{{ gallery_token }}</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if error == "no_face" %}
+    <div class="alert alert-error">No face detected in your selfie. Please try again with a clear front-facing photo.</div>
+    {% elif error == "multiple_faces" %}
+    <div class="alert alert-error">Multiple faces detected. Please submit a solo selfie.</div>
+    {% elif error == "already_registered" %}
+    <div class="alert alert-error">This email is already registered.</div>
+    {% elif error == "bad_image" %}
+    <div class="alert alert-error">Could not read your image. Please upload a JPEG or PNG file (not HEIC). On iPhone, take a screenshot of yourself and upload that instead.</div>
+    {% endif %}
+
+    {% if not success %}
+    <form method="post" action="/register" enctype="multipart/form-data">
+        <label>Full Name
+            <input type="text" name="name" required placeholder="Jane Doe" />
+        </label>
+        <label>Email Address
+            <input type="email" name="email" required placeholder="jane@example.com" />
+        </label>
+        <label>Your Selfie
+            <input type="file" name="selfie" accept="image/*" capture="user" required />
+            <small>Take a clear solo photo of your face.</small>
+        </label>
+        <button type="submit" class="btn">Register</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Wedding Photos{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/register">Guest Registration</a>
+            <a href="/upload">Photographer Upload</a>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}
+        <div class="hero">
+            <h1>Wedding Photo System</h1>
+            <p>Find all your photos from the event — instantly.</p>
+            <div class="actions">
+                <a href="/register" class="btn">I'm a Guest — Register</a>
+                <a href="/upload" class="btn btn-secondary">Photographer Upload</a>
+            </div>
+        </div>
+        {% endblock %}
+    </main>
+
+    <footer>
+        <p>Powered by face recognition &mdash; all data stays on this machine.</p>
+    </footer>
+</body>
+</html>
