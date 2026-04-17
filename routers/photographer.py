@@ -1,11 +1,13 @@
 import os
+import secrets
 import shutil
 
-from fastapi import APIRouter, Request, UploadFile, File, BackgroundTasks, Form
+from fastapi import APIRouter, HTTPException, Request, UploadFile, File, BackgroundTasks, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
-from config import PHOTOS_DIR, SELFIES_DIR, GALLERIES_DIR, PROJECT_ROOT
+from config import PHOTOS_DIR, SELFIES_DIR, GALLERIES_DIR, PROJECT_ROOT, PHOTOGRAPHER_PASSWORD, RESET_PASSWORD
 from database import get_conn
 from face_engine import process_all_unprocessed, clear_cache
 
@@ -122,9 +124,32 @@ async def processing_status():
     }
 
 
+class PasswordRequest(BaseModel):
+    password: str = ""
+
+
+@router.post("/check-password")
+async def check_password(body: PasswordRequest):
+    if not PHOTOGRAPHER_PASSWORD:
+        return {"ok": True}
+    if not secrets.compare_digest(body.password.encode(), PHOTOGRAPHER_PASSWORD.encode()):
+        raise HTTPException(status_code=401, detail="Incorrect password")
+    return {"ok": True}
+
+
+class ResetRequest(BaseModel):
+    password: str = ""
+
+
 @router.post("/reset")
-async def reset_all_data():
+async def reset_all_data(body: ResetRequest):
     """Delete all guests, photos, matches, and uploaded files."""
+    active_password = RESET_PASSWORD or PHOTOGRAPHER_PASSWORD
+    if active_password and not secrets.compare_digest(
+        body.password.encode(), active_password.encode()
+    ):
+        raise HTTPException(status_code=401, detail="Incorrect password")
+
     with get_conn() as conn:
         conn.executescript("""
             DELETE FROM guest_photo_matches;

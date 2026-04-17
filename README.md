@@ -112,4 +112,6 @@ docker compose down
 | Setting | Where | Description |
 |---------|-------|-------------|
 | `GALLERY_BASE_URL` | `.env` | Public URL for gallery links (set to ngrok URL when sharing) |
+| `PHOTOGRAPHER_PASSWORD` | `.env` | Password to access the `/upload` page. Leave empty to disable. |
+| `RESET_PASSWORD` | `.env` | Separate password for the Reset button — gives one person exclusive control over resetting data. Falls back to `PHOTOGRAPHER_PASSWORD` if not set. |
 | `MATCH_THRESHOLD` | `config.py` | Face match sensitivity (0–1). Lower = stricter. Default: 0.35 |

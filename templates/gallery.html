@@ -2,20 +2,29 @@
 {% block title %}{{ guest_name }}'s Gallery{% endblock %}
 {% block content %}
 <div class="card">
-    <h1>Hi {{ guest_name }}!</h1>
-
-    {% if count == 0 %}
-    <p>No photos found yet. The photographer may still be uploading — check back soon.</p>
-    {% else %}
-    <p>We found <strong>{{ count }}</strong> photo{{ 's' if count != 1 else '' }} of you.</p>
-
-    <!-- Toolbar: select all + count -->
-    <div class="gallery-toolbar">
-        <button class="btn btn-secondary" id="toggleSelectAll">Select All</button>
-        <span id="selectedCount" class="selected-count">0 selected</span>
+    <div class="card-header">
+        <h1>Hi, {{ guest_name }}!</h1>
+        <p>Your personal gallery &mdash; only you have this link.</p>
     </div>
 
-    <!-- Photo grid -->
+    {% if count == 0 %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📷</div>
+        <h3>No photos yet</h3>
+        <p>The photographer may still be uploading. Check back soon &mdash; your gallery will update automatically.</p>
+    </div>
+    {% else %}
+
+    <div class="gallery-header">
+        <span class="gallery-meta">
+            <strong>{{ count }}</strong> photo{{ 's' if count != 1 else '' }} found of you
+        </span>
+        <div class="gallery-toolbar">
+            <span id="selectedCount" class="selected-count">0 selected</span>
+            <button class="btn btn-ghost" id="toggleSelectAll" style="padding:6px 14px; font-size:0.82rem;">Select All</button>
+        </div>
+    </div>
+
     <div class="gallery-grid" id="galleryGrid">
         {% for photo_url in photos %}
         {% set filename = photo_url.split('/')[-1] %}
@@ -33,75 +42,71 @@
     <!-- Sticky action bar -->
     <div class="action-bar">
         <div class="action-bar-inner">
-            <span id="actionBarCount">0 selected</span>
-            <button class="btn btn-secondary" id="downloadSelectedBtn" disabled>
-                ⬇ Download Selected
+            <span id="actionBarCount">{{ count }} photo{{ 's' if count != 1 else '' }}</span>
+            <button class="btn btn-ghost" id="downloadSelectedBtn" disabled style="color:#fff; border-color:rgba(255,255,255,0.2);">
+                ↓ Download Selected
             </button>
-            <button class="btn" id="downloadAllBtn">
-                ⬇ Download All
+            <button class="btn" id="downloadAllBtn" style="background:#fff; color:var(--nav);">
+                ↓ Download All
             </button>
-            <span id="downloadError" class="download-error" style="display:none"></span>
+            <span id="downloadError" class="download-error" style="display:none;"></span>
         </div>
     </div>
 
     <script>
     (function () {
         const token = {{ token | tojson }};
-        const grid = document.getElementById("galleryGrid");
-        const toggleBtn = document.getElementById("toggleSelectAll");
-        const selectedCountSpan = document.getElementById("selectedCount");
-        const actionBarCount = document.getElementById("actionBarCount");
-        const downloadSelectedBtn = document.getElementById("downloadSelectedBtn");
-        const downloadError = document.getElementById("downloadError");
+        const grid  = document.getElementById('galleryGrid');
+        const toggleBtn          = document.getElementById('toggleSelectAll');
+        const selectedCountSpan  = document.getElementById('selectedCount');
+        const actionBarCount     = document.getElementById('actionBarCount');
+        const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
+        const downloadError      = document.getElementById('downloadError');
 
         function getChecked() {
-            return [...grid.querySelectorAll(".photo-checkbox:checked")];
+            return [...grid.querySelectorAll('.photo-checkbox:checked')];
         }
 
         function updateUI() {
             const checked = getChecked();
-            const n = checked.length;
-            const total = grid.querySelectorAll(".photo-checkbox").length;
-            const label = n + " selected";
-            selectedCountSpan.textContent = label;
-            actionBarCount.textContent = label;
-            downloadSelectedBtn.disabled = n === 0;
-            toggleBtn.textContent = (n === total && total > 0) ? "Deselect All" : "Select All";
-            grid.querySelectorAll(".gallery-item").forEach(item => {
-                const cb = item.querySelector(".photo-checkbox");
-                item.classList.toggle("selected", cb.checked);
+            const n     = checked.length;
+            const total = grid.querySelectorAll('.photo-checkbox').length;
+            selectedCountSpan.textContent = n ? `${n} selected` : '0 selected';
+            actionBarCount.textContent    = n ? `${n} selected` : `{{ count }} photo{{ 's' if count != 1 else '' }}`;
+            downloadSelectedBtn.disabled  = n === 0;
+            toggleBtn.textContent = (n === total && total > 0) ? 'Deselect All' : 'Select All';
+            grid.querySelectorAll('.gallery-item').forEach(item => {
+                item.classList.toggle('selected', item.querySelector('.photo-checkbox').checked);
             });
         }
 
-        // Click anywhere on card (not on the image link) → toggle checkbox
-        grid.addEventListener("click", function (e) {
-            if (e.target.closest(".photo-link")) return; // let link open photo
-            if (e.target.closest(".photo-checkbox-label")) return; // handled by change event
-            const item = e.target.closest(".gallery-item");
+        grid.addEventListener('click', function (e) {
+            if (e.target.closest('.photo-link')) return;
+            if (e.target.closest('.photo-checkbox-label')) return;
+            const item = e.target.closest('.gallery-item');
             if (!item) return;
-            const cb = item.querySelector(".photo-checkbox");
+            const cb = item.querySelector('.photo-checkbox');
             cb.checked = !cb.checked;
             updateUI();
         });
 
-        grid.addEventListener("change", function (e) {
-            if (e.target.classList.contains("photo-checkbox")) updateUI();
+        grid.addEventListener('change', e => {
+            if (e.target.classList.contains('photo-checkbox')) updateUI();
         });
 
-        toggleBtn.addEventListener("click", function () {
-            const all = [...grid.querySelectorAll(".photo-checkbox")];
+        toggleBtn.addEventListener('click', function () {
+            const all = [...grid.querySelectorAll('.photo-checkbox')];
             const allChecked = all.every(cb => cb.checked);
-            all.forEach(cb => { cb.checked = !allChecked; });
+            all.forEach(cb => cb.checked = !allChecked);
             updateUI();
         });
 
-        // Download photos individually — stagger to avoid browser blocking multiple downloads
         function downloadFiles(urls) {
             urls.forEach((url, i) => {
                 setTimeout(() => {
-                    const a = document.createElement("a");
+                    const a = document.createElement('a');
                     a.href = url;
-                    a.download = url.split("/").pop();
+                    a.download = url.split('/').pop();
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -109,15 +114,13 @@
             });
         }
 
-        downloadSelectedBtn.addEventListener("click", function () {
+        downloadSelectedBtn.addEventListener('click', function () {
             const urls = getChecked().map(cb => `/photos/${token}/${cb.value}`);
-            if (!urls.length) return;
-            downloadFiles(urls);
+            if (urls.length) downloadFiles(urls);
         });
 
-        document.getElementById("downloadAllBtn").addEventListener("click", function () {
-            const urls = [...grid.querySelectorAll(".photo-checkbox")]
-                .map(cb => `/photos/${token}/${cb.value}`);
+        document.getElementById('downloadAllBtn').addEventListener('click', function () {
+            const urls = [...grid.querySelectorAll('.photo-checkbox')].map(cb => `/photos/${token}/${cb.value}`);
             downloadFiles(urls);
         });
 

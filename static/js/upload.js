@@ -44,7 +44,6 @@ document.getElementById("uploadForm").addEventListener("submit", async function 
                     <div class="alert alert-success">
                         <strong>${data.queued} photo(s) uploaded.</strong>
                         Face matching is running in the background.
-                        Guests will be emailed when processing is complete.
                     </div>`;
             } else {
                 resultDiv.style.display = "block";

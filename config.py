@@ -16,4 +16,6 @@ MAX_PHOTO_EDGE    = 1200      # px
 # Server
 HOST             = "0.0.0.0"
 PORT             = 8000
-GALLERY_BASE_URL = os.environ.get("GALLERY_BASE_URL", "http://localhost:8000")
+GALLERY_BASE_URL       = os.environ.get("GALLERY_BASE_URL", "http://localhost:8000")
+PHOTOGRAPHER_PASSWORD  = os.environ.get("PHOTOGRAPHER_PASSWORD", "")
+RESET_PASSWORD         = os.environ.get("RESET_PASSWORD", "")

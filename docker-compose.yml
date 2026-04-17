@@ -10,6 +10,8 @@ services:
       - app_data:/app/data
     environment:
       - GALLERY_BASE_URL=${GALLERY_BASE_URL:-http://localhost:8000}
+      - PHOTOGRAPHER_PASSWORD=${PHOTOGRAPHER_PASSWORD:-}
+      - RESET_PASSWORD=${RESET_PASSWORD:-}
     restart: unless-stopped
 
 volumes:

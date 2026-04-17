@@ -1,77 +1,108 @@
 {% extends "base.html" %}
 {% block title %}Photographer Upload{% endblock %}
 {% block content %}
+
+<!-- Password gate overlay -->
+<div id="passwordGate" style="display:none; position:fixed; inset:0; background:var(--bg);
+     z-index:500; display:flex; align-items:center; justify-content:center; padding:24px;">
+    <div class="card" style="max-width:400px; width:100%; text-align:center;">
+        <div style="font-size:2rem; margin-bottom:16px;">🔒</div>
+        <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.6rem; font-weight:500; margin-bottom:8px;">Photographer Access</h2>
+        <p style="color:var(--text-2); font-size:0.875rem; margin-bottom:24px;">Enter the password to access the upload page.</p>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <input type="password" id="gatePassword" placeholder="Password"
+                style="padding:11px 14px; border:1.5px solid var(--border); border-radius:8px;
+                       font-size:0.95rem; text-align:center; outline:none;"
+                onkeydown="if(event.key==='Enter') submitGate()" autofocus />
+            <button class="btn btn-lg" onclick="submitGate()" style="width:100%; justify-content:center;">
+                Unlock
+            </button>
+            <p id="gateError" style="display:none; color:var(--error); font-size:0.85rem; margin:0;">
+                Incorrect password. Please try again.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Main content (hidden until unlocked) -->
+<div id="uploadContent" style="display:none;">
 <div class="card">
-    <h1>Upload Wedding Photos</h1>
+    <div class="card-header">
+        <h1>Upload Wedding Photos</h1>
+        <p>Select a folder or individual files. Face matching runs automatically in the background.</p>
+    </div>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="showTab('folder')">Select Folder</button>
         <button class="tab-btn" onclick="showTab('files')">Select Files</button>
     </div>
 
-    <!-- Folder picker tab -->
+    <!-- Folder picker -->
     <div id="tab-folder" class="tab-panel">
-        <p>Choose the folder containing all wedding photos. All images inside will be uploaded automatically.</p>
         <form id="folderForm" enctype="multipart/form-data">
-            <label>Choose Folder
+            <div class="file-zone" id="folderZone">
                 <input type="file" name="photos" id="folderInput" webkitdirectory accept="image/*" required />
-                <small>Opens a folder picker — select your photos folder.</small>
-            </label>
-            <button type="submit" class="btn" id="folderBtn">Upload Folder</button>
+                <span class="file-zone-icon">📁</span>
+                <div class="file-zone-label">Click to choose a folder</div>
+                <div class="file-zone-hint">All images inside will be uploaded automatically</div>
+                <div class="file-zone-count" id="folderCount"></div>
+            </div>
+            <button type="submit" class="btn" id="folderBtn" style="align-self:flex-start;">
+                Upload Folder
+            </button>
         </form>
     </div>
 
-    <!-- Manual file upload tab -->
+    <!-- File picker -->
     <div id="tab-files" class="tab-panel" style="display:none;">
-        <p>Select individual photos from the event.</p>
         <form id="uploadForm" enctype="multipart/form-data">
-            <label>Select Photos
+            <div class="file-zone" id="filesZone">
                 <input type="file" name="photos" id="photoInput" accept="image/*" multiple required />
-                <small>You can select multiple files at once.</small>
-            </label>
-            <button type="submit" class="btn" id="uploadBtn">Upload Photos</button>
+                <span class="file-zone-icon">🖼️</span>
+                <div class="file-zone-label">Click to select photos</div>
+                <div class="file-zone-hint">Hold ⌘ or Ctrl to select multiple files</div>
+                <div class="file-zone-count" id="filesCount"></div>
+            </div>
+            <button type="submit" class="btn" id="uploadBtn" style="align-self:flex-start;">
+                Upload Photos
+            </button>
         </form>
     </div>
 
-    <!-- Progress bar -->
-    <div id="progress" style="display:none; margin-top:20px;">
-        <div class="progress-bar-wrap">
-            <div class="progress-bar" id="progressBar"></div>
+    <!-- Progress -->
+    <div id="progress" style="display:none;">
+        <div class="progress-wrap">
+            <div class="progress-bar-track">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <p id="progressText">Processing...</p>
         </div>
-        <p id="progressText" style="margin-top:8px; color:#555; font-size:0.9rem;">Processing...</p>
     </div>
 
-    <div id="result" style="display:none; margin-top:16px;"></div>
+    <div id="result" style="margin-top:16px; display:none;"></div>
 
-    <!-- Reset section -->
-    <hr style="margin:32px 0; border:none; border-top:1px solid #e5e7eb;">
-    <div>
-        <h3 style="margin-bottom:8px; color:#374151;">Reset for a New Event</h3>
-        <p style="color:#6b7280; font-size:0.9rem;">Deletes all uploaded photos, guest registrations, and matches. Use this before starting a new event.</p>
-        <button class="btn btn-danger" id="resetBtn" onclick="confirmReset()">Reset All Data</button>
+    <!-- Reset -->
+    <div class="danger-zone">
+        <h3>Reset for a New Event</h3>
+        <p>Permanently deletes all uploaded photos, guest registrations, and matches. Use this before starting a fresh event.</p>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <input type="password" id="resetPassword" placeholder="Enter password to reset"
+                style="padding:9px 14px; border:1.5px solid #FECACA; border-radius:8px; font-size:0.875rem;
+                       background:#fff; color:#991B1B; outline:none; width:240px;"
+                onkeydown="if(event.key==='Enter') confirmReset()" />
+            <button class="btn btn-danger" id="resetBtn" onclick="confirmReset()">Reset All Data</button>
+        </div>
         <div id="resetResult" style="display:none; margin-top:12px;"></div>
     </div>
 </div>
+</div> <!-- #uploadContent -->
 
 <style>
-.tabs { display: flex; gap: 8px; margin-bottom: 20px; }
-.tab-btn {
-    padding: 8px 18px; border: 1px solid #d1d5db; background: #f3f4f6;
-    border-radius: 8px; cursor: pointer; font-size: 0.9rem;
-}
-.tab-btn.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
-.btn-danger {
-    background: #dc2626; border-color: #dc2626; color: #fff;
-    padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;
-    border: 1px solid;
-}
-.btn-danger:hover { background: #b91c1c; }
+.tab-panel form { display: flex; flex-direction: column; gap: 16px; }
 </style>
 
 <script>
-// ---------------------------------------------------------------------------
 // Tab switching
-// ---------------------------------------------------------------------------
 function showTab(name) {
     document.getElementById('tab-folder').style.display = name === 'folder' ? '' : 'none';
     document.getElementById('tab-files').style.display  = name === 'files'  ? '' : 'none';
@@ -80,18 +111,34 @@ function showTab(name) {
     });
 }
 
-// ---------------------------------------------------------------------------
+// File count display
+document.getElementById('folderInput').addEventListener('change', function () {
+    const el = document.getElementById('folderCount');
+    el.textContent = this.files.length ? `✓ ${this.files.length} photo${this.files.length !== 1 ? 's' : ''} selected` : '';
+    el.style.display = this.files.length ? 'block' : 'none';
+});
+document.getElementById('photoInput').addEventListener('change', function () {
+    const el = document.getElementById('filesCount');
+    el.textContent = this.files.length ? `✓ ${this.files.length} photo${this.files.length !== 1 ? 's' : ''} selected` : '';
+    el.style.display = this.files.length ? 'block' : 'none';
+});
+
+// Drag-over styling
+['folderZone', 'filesZone'].forEach(id => {
+    const zone = document.getElementById(id);
+    ['dragover','dragenter'].forEach(e => zone.addEventListener(e, ev => { ev.preventDefault(); zone.classList.add('drag-over'); }));
+    ['dragleave','drop'].forEach(e => zone.addEventListener(e, () => zone.classList.remove('drag-over')));
+});
+
 // Status polling
-// ---------------------------------------------------------------------------
 let _statusInterval = null;
 
 function startStatusPolling() {
     if (_statusInterval) return;
     document.getElementById('progress').style.display = 'block';
-    _statusInterval = setInterval(async function () {
+    _statusInterval = setInterval(async () => {
         try {
-            const res  = await fetch('/status');
-            const data = await res.json();
+            const data = await fetch('/status').then(r => r.json());
             const pct  = data.percent;
             document.getElementById('progressBar').style.width = pct + '%';
             document.getElementById('progressText').textContent =
@@ -100,9 +147,9 @@ function startStatusPolling() {
                 stopStatusPolling();
                 document.getElementById('progressBar').style.width = '100%';
                 document.getElementById('progressText').textContent =
-                    `Done! ${data.processed} photos processed · ${data.matches_found} matches found.`;
+                    `✓ Done — ${data.processed} photos processed · ${data.matches_found} matches found`;
             }
-        } catch (e) { /* network blip — keep polling */ }
+        } catch (e) {}
     }, 3000);
 }
 
@@ -118,32 +165,23 @@ function showResult(data) {
         document.getElementById('progress').style.display = 'none';
         el.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
     } else {
-        el.innerHTML = `<div class="alert alert-success">
-            <strong>${data.queued} photo(s) queued.</strong> ${data.message}
-        </div>`;
+        el.innerHTML = `<div class="alert alert-success"><strong>${data.queued} photo(s) queued.</strong> ${data.message}</div>`;
         startStatusPolling();
     }
 }
 
-// ---------------------------------------------------------------------------
-// Shared upload handler (used by both folder and file forms)
-// ---------------------------------------------------------------------------
-async function submitUpload(formId, btnId, inputId) {
+// Shared upload handler
+async function submitUpload(btnId, inputId) {
     const btn   = document.getElementById(btnId);
     const input = document.getElementById(inputId);
     if (!input.files.length) return;
-
     btn.disabled = true;
     document.getElementById('result').style.display = 'none';
     stopStatusPolling();
-
     const body = new FormData();
-    for (const file of input.files) {
-        body.append('photos', file);
-    }
+    for (const file of input.files) body.append('photos', file);
     try {
-        const res  = await fetch('/upload', { method: 'POST', body });
-        const data = await res.json();
+        const data = await fetch('/upload', { method: 'POST', body }).then(r => r.json());
         showResult(data);
     } catch (err) {
         showResult({ error: 'Upload failed: ' + err.message });
@@ -151,16 +189,17 @@ async function submitUpload(formId, btnId, inputId) {
     btn.disabled = false;
 }
 
-document.getElementById('folderForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    submitUpload('folderForm', 'folderBtn', 'folderInput');
-});
+document.getElementById('folderForm').addEventListener('submit', e => { e.preventDefault(); submitUpload('folderBtn', 'folderInput'); });
 
-// ---------------------------------------------------------------------------
 // Reset
-// ---------------------------------------------------------------------------
 async function confirmReset() {
-    if (!confirm('This will delete ALL photos, guests, and matches. Are you sure?')) return;
+    const password = document.getElementById('resetPassword').value;
+    if (!password) {
+        document.getElementById('resetResult').style.display = 'block';
+        document.getElementById('resetResult').innerHTML = `<div class="alert alert-error">Please enter the password.</div>`;
+        return;
+    }
+    if (!confirm('This will permanently delete ALL photos, guests, and matches. Are you sure?')) return;
     const btn = document.getElementById('resetBtn');
     const el  = document.getElementById('resetResult');
     btn.disabled = true;
@@ -168,16 +207,68 @@ async function confirmReset() {
     document.getElementById('progress').style.display = 'none';
     document.getElementById('result').style.display = 'none';
     try {
-        const res  = await fetch('/reset', { method: 'POST' });
+        const res  = await fetch('/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
         const data = await res.json();
         el.style.display = 'block';
-        el.innerHTML = `<div class="alert alert-success">All data cleared. Ready for a new event.</div>`;
+        if (res.ok) {
+            el.innerHTML = `<div class="alert alert-success">All data cleared. Ready for a new event.</div>`;
+            document.getElementById('resetPassword').value = '';
+        } else {
+            el.innerHTML = `<div class="alert alert-error">Incorrect password.</div>`;
+        }
     } catch (err) {
         el.style.display = 'block';
         el.innerHTML = `<div class="alert alert-error">Reset failed: ${err.message}</div>`;
     }
     btn.disabled = false;
 }
+
+// ---------------------------------------------------------------------------
+// Password gate
+// ---------------------------------------------------------------------------
+const SESSION_KEY = 'upload_authed';
+
+async function submitGate() {
+    const pwd = document.getElementById('gatePassword').value;
+    const errEl = document.getElementById('gateError');
+    errEl.style.display = 'none';
+    try {
+        const res = await fetch('/check-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pwd })
+        });
+        if (res.ok) {
+            sessionStorage.setItem(SESSION_KEY, '1');
+            document.getElementById('passwordGate').style.display = 'none';
+            document.getElementById('uploadContent').style.display = 'block';
+        } else {
+            errEl.style.display = 'block';
+            document.getElementById('gatePassword').value = '';
+            document.getElementById('gatePassword').focus();
+        }
+    } catch (err) {
+        errEl.textContent = 'Connection error. Please try again.';
+        errEl.style.display = 'block';
+    }
+}
+
+(function initGate() {
+    if (sessionStorage.getItem(SESSION_KEY)) {
+        // Already authenticated this session
+        document.getElementById('passwordGate').style.display = 'none';
+        document.getElementById('uploadContent').style.display = 'block';
+    } else {
+        // Show gate, hide content
+        document.getElementById('passwordGate').style.display = 'flex';
+        document.getElementById('uploadContent').style.display = 'none';
+        setTimeout(() => document.getElementById('gatePassword').focus(), 50);
+    }
+})();
 </script>
 
 <script src="/static/js/upload.js"></script>
