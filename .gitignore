@@ -20,9 +20,9 @@ logs/
 .DS_Store
 .AppleDouble
 
-# Environment variables
-.env
-.env.*
+# # Environment variables
+# .env
+# .env.*
 
 # Docker
 .dockerignore
