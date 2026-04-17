@@ -26,18 +26,8 @@ async def register_form(request: Request, success: int = 0, error: str = ""):
 async def register_submit(
     request: Request,
     name: str = Form(...),
-    email: str = Form(...),
     selfie: UploadFile = File(...),
 ):
-    # Check duplicate email
-    with get_conn() as conn:
-        existing = conn.execute("SELECT id FROM guests WHERE email = ?", (email,)).fetchone()
-    if existing:
-        return templates.TemplateResponse(
-            "register.html",
-            {"request": request, "error": "already_registered", "success": 0},
-        )
-
     # Save selfie to disk
     ext = os.path.splitext(selfie.filename or "selfie.jpg")[1] or ".jpg"
     selfie_filename = f"{uuid.uuid4()}{ext}"
@@ -63,8 +53,8 @@ async def register_submit(
 
     with get_conn() as conn:
         cursor = conn.execute(
-            "INSERT INTO guests (name, email, token, selfie_path, embedding) VALUES (?, ?, ?, ?, ?)",
-            (name, email, token, selfie_path, embedding_bytes),
+            "INSERT INTO guests (name, token, selfie_path, embedding) VALUES (?, ?, ?, ?)",
+            (name, token, selfie_path, embedding_bytes),
         )
         guest_id = cursor.lastrowid
 

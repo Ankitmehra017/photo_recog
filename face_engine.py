@@ -134,6 +134,11 @@ def add_guest_to_cache(guest_id: int, token: str, embedding: np.ndarray):
     })
 
 
+def clear_cache():
+    """Wipe the in-memory guest cache (call after a full data reset)."""
+    _GUEST_CACHE.clear()
+
+
 # ---------------------------------------------------------------------------
 # Match recording
 # ---------------------------------------------------------------------------
@@ -189,7 +194,6 @@ def process_all_unprocessed():
     """
     global IS_PROCESSING
     from database import get_conn
-    from email_service import notify_all_unnotified_guests
 
     with _PROCESSING_LOCK:
         if IS_PROCESSING:
@@ -235,8 +239,6 @@ def process_all_unprocessed():
                         conn.execute(
                             "UPDATE wedding_photos SET processed = 1 WHERE id = ?", (photo_id,)
                         )
-
-        notify_all_unnotified_guests()
 
     finally:
         with _PROCESSING_LOCK:

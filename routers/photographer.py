@@ -1,12 +1,13 @@
 import os
+import shutil
 
 from fastapi import APIRouter, Request, UploadFile, File, BackgroundTasks, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
-from config import PHOTOS_DIR, PROJECT_ROOT
+from config import PHOTOS_DIR, SELFIES_DIR, GALLERIES_DIR, PROJECT_ROOT
 from database import get_conn
-from face_engine import process_all_unprocessed
+from face_engine import process_all_unprocessed, clear_cache
 
 router = APIRouter()
 templates = Jinja2Templates(directory=os.path.join(PROJECT_ROOT, "templates"))
@@ -119,3 +120,22 @@ async def processing_status():
         "matches_found": matches,
         "is_processing": face_engine.IS_PROCESSING,
     }
+
+
+@router.post("/reset")
+async def reset_all_data():
+    """Delete all guests, photos, matches, and uploaded files."""
+    with get_conn() as conn:
+        conn.executescript("""
+            DELETE FROM guest_photo_matches;
+            DELETE FROM wedding_photos;
+            DELETE FROM guests;
+        """)
+
+    for directory in [PHOTOS_DIR, GALLERIES_DIR, SELFIES_DIR]:
+        if os.path.isdir(directory):
+            shutil.rmtree(directory)
+            os.makedirs(directory)
+
+    clear_cache()
+    return {"message": "All data cleared."}

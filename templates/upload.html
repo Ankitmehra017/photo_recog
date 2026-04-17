@@ -5,26 +5,25 @@
     <h1>Upload Wedding Photos</h1>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="showTab('folder')">From Folder Path</button>
-        <button class="tab-btn" onclick="showTab('files')">Select Files Manually</button>
+        <button class="tab-btn active" onclick="showTab('folder')">Select Folder</button>
+        <button class="tab-btn" onclick="showTab('files')">Select Files</button>
     </div>
 
-    <!-- Folder path tab -->
+    <!-- Folder picker tab -->
     <div id="tab-folder" class="tab-panel">
-        <p>Paste the full path to the folder containing your photos. All images inside will be loaded automatically.</p>
-        <form id="folderForm">
-            <label>Folder Path
-                <input type="text" name="folder_path" id="folderInput"
-                    placeholder="/Users/you/Downloads/wedding photos" required />
-                <small>Example: /Users/ankitmehra/Downloads/photo recog</small>
+        <p>Choose the folder containing all wedding photos. All images inside will be uploaded automatically.</p>
+        <form id="folderForm" enctype="multipart/form-data">
+            <label>Choose Folder
+                <input type="file" name="photos" id="folderInput" webkitdirectory accept="image/*" required />
+                <small>Opens a folder picker — select your photos folder.</small>
             </label>
-            <button type="submit" class="btn" id="folderBtn">Load Photos from Folder</button>
+            <button type="submit" class="btn" id="folderBtn">Upload Folder</button>
         </form>
     </div>
 
     <!-- Manual file upload tab -->
     <div id="tab-files" class="tab-panel" style="display:none;">
-        <p>Select all photos from the event. Processing happens automatically in the background.</p>
+        <p>Select individual photos from the event.</p>
         <form id="uploadForm" enctype="multipart/form-data">
             <label>Select Photos
                 <input type="file" name="photos" id="photoInput" accept="image/*" multiple required />
@@ -34,7 +33,7 @@
         </form>
     </div>
 
-    <!-- Progress bar (shown after upload) -->
+    <!-- Progress bar -->
     <div id="progress" style="display:none; margin-top:20px;">
         <div class="progress-bar-wrap">
             <div class="progress-bar" id="progressBar"></div>
@@ -43,6 +42,15 @@
     </div>
 
     <div id="result" style="display:none; margin-top:16px;"></div>
+
+    <!-- Reset section -->
+    <hr style="margin:32px 0; border:none; border-top:1px solid #e5e7eb;">
+    <div>
+        <h3 style="margin-bottom:8px; color:#374151;">Reset for a New Event</h3>
+        <p style="color:#6b7280; font-size:0.9rem;">Deletes all uploaded photos, guest registrations, and matches. Use this before starting a new event.</p>
+        <button class="btn btn-danger" id="resetBtn" onclick="confirmReset()">Reset All Data</button>
+        <div id="resetResult" style="display:none; margin-top:12px;"></div>
+    </div>
 </div>
 
 <style>
@@ -52,6 +60,12 @@
     border-radius: 8px; cursor: pointer; font-size: 0.9rem;
 }
 .tab-btn.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+.btn-danger {
+    background: #dc2626; border-color: #dc2626; color: #fff;
+    padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;
+    border: 1px solid;
+}
+.btn-danger:hover { background: #b91c1c; }
 </style>
 
 <script>
@@ -112,29 +126,58 @@ function showResult(data) {
 }
 
 // ---------------------------------------------------------------------------
-// Folder form
+// Shared upload handler (used by both folder and file forms)
 // ---------------------------------------------------------------------------
-document.getElementById('folderForm').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const btn  = document.getElementById('folderBtn');
-    const path = document.getElementById('folderInput').value.trim();
-    if (!path) return;
+async function submitUpload(formId, btnId, inputId) {
+    const btn   = document.getElementById(btnId);
+    const input = document.getElementById(inputId);
+    if (!input.files.length) return;
 
     btn.disabled = true;
     document.getElementById('result').style.display = 'none';
     stopStatusPolling();
 
     const body = new FormData();
-    body.append('folder_path', path);
+    for (const file of input.files) {
+        body.append('photos', file);
+    }
     try {
-        const res  = await fetch('/upload-folder', { method: 'POST', body });
+        const res  = await fetch('/upload', { method: 'POST', body });
         const data = await res.json();
         showResult(data);
     } catch (err) {
-        showResult({ error: 'Request failed: ' + err.message });
+        showResult({ error: 'Upload failed: ' + err.message });
     }
     btn.disabled = false;
+}
+
+document.getElementById('folderForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    submitUpload('folderForm', 'folderBtn', 'folderInput');
 });
+
+// ---------------------------------------------------------------------------
+// Reset
+// ---------------------------------------------------------------------------
+async function confirmReset() {
+    if (!confirm('This will delete ALL photos, guests, and matches. Are you sure?')) return;
+    const btn = document.getElementById('resetBtn');
+    const el  = document.getElementById('resetResult');
+    btn.disabled = true;
+    stopStatusPolling();
+    document.getElementById('progress').style.display = 'none';
+    document.getElementById('result').style.display = 'none';
+    try {
+        const res  = await fetch('/reset', { method: 'POST' });
+        const data = await res.json();
+        el.style.display = 'block';
+        el.innerHTML = `<div class="alert alert-success">All data cleared. Ready for a new event.</div>`;
+    } catch (err) {
+        el.style.display = 'block';
+        el.innerHTML = `<div class="alert alert-error">Reset failed: ${err.message}</div>`;
+    }
+    btn.disabled = false;
+}
 </script>
 
 <script src="/static/js/upload.js"></script>

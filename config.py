@@ -13,11 +13,6 @@ MATCH_THRESHOLD   = 0.35      # cosine similarity; higher = stricter (range 0–
 MAX_SELFIE_EDGE   = 800       # px
 MAX_PHOTO_EDGE    = 1200      # px
 
-# SMTP
-SMTP_HOST    = "localhost"
-SMTP_PORT    = 1025
-EMAIL_FROM   = "wedding@local.dev"
-
 # Server
 HOST             = "0.0.0.0"
 PORT             = 8000

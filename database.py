@@ -9,6 +9,29 @@ def get_conn():
     return conn
 
 
+def _migrate(conn):
+    """Drop email/email_sent columns from guests if they exist (old schema)."""
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(guests)")}
+    if "email" in cols:
+        conn.executescript("""
+            PRAGMA foreign_keys = OFF;
+            DROP TABLE IF EXISTS guests_new;
+            CREATE TABLE guests_new (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                name          TEXT NOT NULL,
+                token         TEXT NOT NULL UNIQUE,
+                selfie_path   TEXT NOT NULL,
+                embedding     BLOB NOT NULL,
+                registered_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            INSERT INTO guests_new (id, name, token, selfie_path, embedding, registered_at)
+                SELECT id, name, token, selfie_path, embedding, registered_at FROM guests;
+            DROP TABLE guests;
+            ALTER TABLE guests_new RENAME TO guests;
+            PRAGMA foreign_keys = ON;
+        """)
+
+
 def init_db():
     with get_conn() as conn:
         conn.execute("PRAGMA journal_mode = WAL")
@@ -16,12 +39,10 @@ def init_db():
             CREATE TABLE IF NOT EXISTS guests (
                 id            INTEGER PRIMARY KEY AUTOINCREMENT,
                 name          TEXT NOT NULL,
-                email         TEXT NOT NULL UNIQUE,
                 token         TEXT NOT NULL UNIQUE,
                 selfie_path   TEXT NOT NULL,
                 embedding     BLOB NOT NULL,
-                registered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                email_sent    INTEGER DEFAULT 0
+                registered_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
             CREATE TABLE IF NOT EXISTS wedding_photos (
@@ -40,3 +61,4 @@ def init_db():
                 UNIQUE(guest_id, photo_id)
             );
         """)
+        _migrate(conn)

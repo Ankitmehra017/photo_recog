@@ -27,7 +27,7 @@ RUN pip install --no-cache-dir --upgrade pip \
         pillow-heif
 
 # ── Copy application code ─────────────────────────────────────────────────────
-COPY main.py config.py database.py face_engine.py email_service.py ./
+COPY main.py config.py database.py face_engine.py ./
 COPY routers/   routers/
 COPY templates/ templates/
 COPY static/    static/
@@ -42,7 +42,8 @@ RUN mkdir -p /app/data/db \
              /app/data/selfies \
              /app/data/wedding_photos \
              /app/data/galleries \
-             /app/logs
+             /app/logs \
+             /photos
 
 # ── insightface model cache ───────────────────────────────────────────────────
 # insightface downloads ~300 MB of ONNX models to ~/.insightface on first run.

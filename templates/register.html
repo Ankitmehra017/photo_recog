@@ -7,10 +7,10 @@
 
     {% if success %}
     <div class="alert alert-success">
-        <strong>You're registered!</strong> Once the photographer uploads the photos,
-        you'll receive an email with your personal gallery link.
+        <strong>You're registered!</strong> Bookmark your personal gallery link below — your photos will appear here once the photographer uploads them.
         {% if gallery_token %}
-        <br/>Your gallery: <a href="/gallery/{{ gallery_token }}">/gallery/{{ gallery_token }}</a>
+        <br/><br/>
+        <a href="/gallery/{{ gallery_token }}" style="font-size:1.05rem; font-weight:600;">/gallery/{{ gallery_token }}</a>
         {% endif %}
     </div>
     {% endif %}
@@ -19,8 +19,6 @@
     <div class="alert alert-error">No face detected in your selfie. Please try again with a clear front-facing photo.</div>
     {% elif error == "multiple_faces" %}
     <div class="alert alert-error">Multiple faces detected. Please submit a solo selfie.</div>
-    {% elif error == "already_registered" %}
-    <div class="alert alert-error">This email is already registered.</div>
     {% elif error == "bad_image" %}
     <div class="alert alert-error">Could not read your image. Please upload a JPEG or PNG file (not HEIC). On iPhone, take a screenshot of yourself and upload that instead.</div>
     {% endif %}
@@ -29,9 +27,6 @@
     <form method="post" action="/register" enctype="multipart/form-data">
         <label>Full Name
             <input type="text" name="name" required placeholder="Jane Doe" />
-        </label>
-        <label>Email Address
-            <input type="email" name="email" required placeholder="jane@example.com" />
         </label>
         <label>Your Selfie
             <input type="file" name="selfie" accept="image/*" capture="user" required />

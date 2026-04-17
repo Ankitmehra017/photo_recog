@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - insightface_cache:/root/.insightface
+      - app_data:/app/data
+    environment:
+      - GALLERY_BASE_URL=${GALLERY_BASE_URL:-http://localhost:8000}
+    restart: unless-stopped
+
+volumes:
+  insightface_cache:
+  app_data:
